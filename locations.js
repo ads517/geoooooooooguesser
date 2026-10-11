@@ -1,7 +1,7 @@
 // Regions the game picks from. Each entry is [latitude, longitude, spread in km].
 // A random point within the spread is chosen, then the nearest Google Street View
 // road is used. Places are weighted by how many entries they have here.
-window.LOST_POSTCARDS_REGIONS = [
+window.GAME_REGIONS = [
   // United States
   [40.7, -74.0, 60], [42.3, -71.1, 80], [39.9, -75.2, 80], [38.9, -77.0, 80], [35.2, -80.8, 120],
   [33.7, -84.4, 120], [30.3, -81.7, 120], [27.9, -82.5, 120], [25.8, -80.2, 60], [32.8, -96.8, 150],

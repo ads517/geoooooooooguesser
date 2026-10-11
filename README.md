@@ -1,4 +1,4 @@
-# Lost Postcards
+# Geoooooooooguesser
 
 A GeoGuessr-style game. You're dropped on a random Google Street View road somewhere in the world. Look around, walk down the street, then drop a pin on the map where you think you are. Five rounds, up to 5,000 points each.
 
@@ -14,13 +14,13 @@ The game is plain HTML, CSS and JavaScript with no build step. It needs two thin
 
 1. In this repository, open **Settings → Pages**.
 2. Under **Build and deployment**, set **Source** to **Deploy from a branch**, pick **main** and **/ (root)**, then **Save**.
-3. After a minute the game is live at `https://<your-username>.github.io/lost-postcards/`.
+3. After a minute the game is live at `https://<your-username>.github.io/geoooooooooguesser/`.
 
 ### 2. Get a Google Maps API key
 
 Street View comes from Google, so the game needs your own key.
 
-1. Go to [console.cloud.google.com](https://console.cloud.google.com/) and create a project (for example "Lost Postcards").
+1. Go to [console.cloud.google.com](https://console.cloud.google.com/) and create a project (for example "Geoooooooooguesser").
 2. **Billing:** link a billing account to the project. Google asks for a card even though there's a free monthly allowance. Check [Google Maps Platform pricing](https://mapsplatform.google.com/pricing/) for the current free amounts.
 3. **APIs & Services → Library:** search for **Maps JavaScript API** and click **Enable**.
 4. **APIs & Services → Credentials → Create credentials → API key.** Copy the key.
@@ -34,7 +34,7 @@ Street View comes from Google, so the game needs your own key.
 7. Put the key in the game: open `config.js` on GitHub, click the pencil icon, paste the key between the quotes and commit.
 
 ```js
-window.LOST_POSTCARDS_CONFIG = {
+window.GAME_CONFIG = {
   googleMapsApiKey: "AIza...your key...",
 };
 ```

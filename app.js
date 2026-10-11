@@ -5,7 +5,7 @@ const MAX_POINTS = 5000;
 const MAX_PLAYERS = 8;
 const COLORS = ["#0a84ff", "#ff9f0a", "#bf5af2", "#30d158", "#ff375f", "#64d2ff", "#ffd60a", "#ac8e68"];
 const CODE_LETTERS = "ABCDEFGHJKMNPQRSTUVWXYZ";
-const PEER_PREFIX = "lost-postcards-v1-";
+const PEER_PREFIX = "geoooooooooguesser-v1-";
 const MAP_STYLES = [
   { featureType: "poi", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
@@ -13,8 +13,8 @@ const MAP_STYLES = [
 ];
 
 const $ = (s) => document.querySelector(s);
-const config = window.LOST_POSTCARDS_CONFIG || {};
-const REGIONS = window.LOST_POSTCARDS_REGIONS || [];
+const config = window.GAME_CONFIG || {};
+const REGIONS = window.GAME_REGIONS || [];
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let gm = null;          // google.maps, once loaded
@@ -91,10 +91,10 @@ function loadGoogleMaps() {
   if (!config.googleMapsApiKey) { showSetup(); return; }
   window.gm_authFailure = () => showSetup(
     "Google didn't accept the API key in config.js. Check that the key is right, that the Maps JavaScript API is turned on for it, and that it allows this website.");
-  window.__lostPostcardsMapsReady = onMapsReady;
+  window.__gameMapsReady = onMapsReady;
   const s = document.createElement("script");
   s.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(config.googleMapsApiKey) +
-    "&v=weekly&loading=async&callback=__lostPostcardsMapsReady";
+    "&v=weekly&loading=async&callback=__gameMapsReady";
   s.async = true;
   s.onerror = () => showSetup("Couldn't load Google Maps. Check your internet connection and reload the page.");
   document.head.append(s);
