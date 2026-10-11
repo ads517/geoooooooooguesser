@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Lost Postcards</title>
+  <meta name="description" content="Explore a random street anywhere in the world and guess where you are. Solo or with friends.">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%230071e3'/%3E%3Cpath d='M16 7c-3.3 0-6 2.6-6 5.9C10 17.3 16 25 16 25s6-7.7 6-12.1C22 9.6 19.3 7 16 7zm0 8.2a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6z' fill='white'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-screen="boot">
+  <!-- Full-screen layers -->
+  <div id="pano" class="layer"></div>
+  <div id="bigmap" class="layer"></div>
+
+  <!-- Home -->
+  <section class="center-wrap" id="home">
+    <div class="card home-card">
+      <div class="app-icon" aria-hidden="true">
+        <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="var(--accent)"/><path d="M32 13c-7 0-12.6 5.5-12.6 12.4C19.4 34.6 32 51 32 51s12.6-16.4 12.6-25.6C44.6 18.5 39 13 32 13zm0 17.3a4.9 4.9 0 1 1 0-9.8 4.9 4.9 0 0 1 0 9.8z" fill="#fff"/></svg>
+      </div>
+      <h1>Lost Postcards</h1>
+      <p class="subtitle">You'll be dropped on a random street somewhere in the world. Look around, walk, then guess where you are.</p>
+
+      <div class="group">
+        <label class="row-field">
+          <span>Name</span>
+          <input id="nick" maxlength="18" autocomplete="nickname" placeholder="Traveller" spellcheck="false">
+        </label>
+        <div class="row-field">
+          <span id="timeLbl">Time</span>
+          <div class="segmented" role="radiogroup" aria-labelledby="timeLbl">
+            <label><input type="radio" name="timer" value="0" checked><span>None</span></label>
+            <label><input type="radio" name="timer" value="120"><span>2 min</span></label>
+            <label><input type="radio" name="timer" value="60"><span>1 min</span></label>
+          </div>
+        </div>
+        <div class="row-field">
+          <span id="moveLbl">Moving</span>
+          <div class="segmented" role="radiogroup" aria-labelledby="moveLbl">
+            <label><input type="radio" name="move" value="1" checked><span>Allowed</span></label>
+            <label><input type="radio" name="move" value="0"><span>Look only</span></label>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn primary large" id="soloBtn" type="button">Play</button>
+      <button class="btn plain" id="friendsBtn" type="button">Play with Friends</button>
+    </div>
+  </section>
+
+  <!-- Friends -->
+  <section class="center-wrap" id="friends">
+    <div class="card">
+      <button class="icon-btn back" id="friendsBack" type="button" aria-label="Back">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h2>Play with Friends</h2>
+      <p class="subtitle">Everyone gets the same five places. Scores update live.</p>
+      <button class="btn primary large" id="createBtn" type="button">Create Game</button>
+      <div class="or"><span>or join with a code</span></div>
+      <form class="join" id="joinForm">
+        <input id="joinCode" maxlength="4" placeholder="ABCD" aria-label="Game code" autocomplete="off" spellcheck="false" autocapitalize="characters">
+        <button class="btn secondary" id="joinBtn" type="submit">Join</button>
+      </form>
+      <p class="note" id="friendsNote"></p>
+    </div>
+  </section>
+
+  <!-- Lobby -->
+  <section class="center-wrap" id="lobby">
+    <div class="card">
+      <h2 id="lobbyTitle">Waiting Room</h2>
+      <p class="subtitle" id="lobbyHelp">Share this code. Friends open this page, tap Play with Friends and enter it.</p>
+      <button class="code" id="codeBtn" type="button" aria-label="Copy game code"><span id="codeText">····</span><small id="copyHint">Tap to copy</small></button>
+      <ul class="list" id="playerList"></ul>
+      <button class="btn primary large" id="startBtn" type="button">Start Game</button>
+      <button class="btn plain danger" id="leaveBtn" type="button">Leave</button>
+      <p class="note" id="lobbyNote"></p>
+    </div>
+  </section>
+
+  <!-- Loading -->
+  <section class="center-wrap" id="loading">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="loading-text" id="loadingText">Finding a place…</p>
+  </section>
+
+  <!-- Setup (no key) -->
+  <section class="center-wrap" id="setup">
+    <div class="card">
+      <h2>Almost ready</h2>
+      <p class="subtitle" id="setupText">This game needs a Google Maps API key. Open <b>config.js</b>, paste your key between the quotes and reload. The README explains how to get a key.</p>
+    </div>
+  </section>
+
+  <!-- In-game controls -->
+  <div class="hud" id="hud">
+    <div class="pill">
+      <div><small>Round</small><b id="hudRound">1/5</b></div>
+      <div><small>Score</small><b id="hudScore">0</b></div>
+      <div id="hudTimeBox"><small>Time</small><b id="hudTime">0:00</b></div>
+    </div>
+  </div>
+  <button class="icon-btn float tl" id="startOverBtn" type="button" aria-label="Back to where you started" title="Back to start">
+    <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <button class="icon-btn float tr" id="quitBtn" type="button" aria-label="Leave game">
+    <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <ol class="standings" id="standings"></ol>
+
+  <div class="mapcard" id="mapcard">
+    <div class="mapcard-head">
+      <button class="icon-btn small" id="mapClose" type="button" aria-label="Hide map">
+        <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div id="guessmap"></div>
+    <button class="btn primary" id="guessBtn" type="button" disabled>Place a pin on the map</button>
+  </div>
+  <button class="fab" id="mapFab" type="button" aria-label="Open map">
+    <svg viewBox="0 0 24 24"><path d="M9 4L3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 4v13M15 6.5v13" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+    <span>Map</span>
+  </button>
+
+  <!-- Round result -->
+  <section class="sheet" id="result">
+    <div class="points"><b id="resPoints">0</b><span>points</span></div>
+    <div class="meter"><i id="resMeter"></i></div>
+    <p class="detail" id="resDetail"></p>
+    <ul class="others" id="resOthers"></ul>
+    <div class="sheet-actions">
+      <a class="btn plain" id="resLink" target="_blank" rel="noopener">View in Google Maps</a>
+      <button class="btn primary" id="nextBtn" type="button">Next Round</button>
+    </div>
+  </section>
+
+  <!-- Game summary -->
+  <section class="sheet tall" id="summary">
+    <div class="points"><b id="sumPoints">0</b><span>of 25,000</span></div>
+    <p class="detail" id="sumVerdict"></p>
+    <ul class="list compact" id="sumRounds"></ul>
+    <div id="sumBoardBox">
+      <h3>Standings</h3>
+      <ul class="list compact" id="sumBoard"></ul>
+    </div>
+    <p class="note" id="sumNote"></p>
+    <div class="sheet-actions">
+      <button class="btn plain" id="doneBtn" type="button">Done</button>
+      <button class="btn primary" id="againBtn" type="button">Play Again</button>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="config.js"></script>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="locations.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
