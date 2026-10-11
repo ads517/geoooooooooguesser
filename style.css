@@ -282,3 +282,6 @@ body:not(.multi) #sumBoardBox { display: none; }
 /* Floating round buttons only belong to the game screens. */
 body:not([data-screen="play"]) #startOverBtn,
 body:not([data-screen="play"]):not([data-screen="result"]) #quitBtn { display: none; }
+
+.note.small { font-size: 13px; color: var(--tertiary); margin-top: -4px; }
+.btn[hidden] { display: none; }

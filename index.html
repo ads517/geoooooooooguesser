@@ -48,6 +48,7 @@
 
       <button class="btn primary large" id="soloBtn" type="button">Play</button>
       <button class="btn plain" id="friendsBtn" type="button">Play with Friends</button>
+      <p class="note small" id="usageNote"></p>
     </div>
   </section>
 
@@ -91,8 +92,9 @@
   <!-- Setup (no key) -->
   <section class="center-wrap" id="setup">
     <div class="card">
-      <h2>Almost ready</h2>
+      <h2 id="setupTitle">Almost ready</h2>
       <p class="subtitle" id="setupText">This game needs a Google Maps API key. Open <b>config.js</b>, paste your key between the quotes and reload. The README explains how to get a key.</p>
+      <button class="btn primary large" id="setupDone" type="button" hidden>Done</button>
     </div>
   </section>
 

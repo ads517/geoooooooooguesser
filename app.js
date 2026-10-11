@@ -60,6 +60,7 @@ function el(tag, attrs = {}, ...kids) {
 function setScreen(name) {
   document.body.dataset.screen = name;
   document.body.classList.remove("map-open");
+  if (name === "home" && usage.db) refreshUsageNote();
   if (name === "play" && pano) gm.event.trigger(pano, "resize");
 }
 let toastTimer = null;
@@ -85,13 +86,83 @@ function showSetup(message) {
   setScreen("setup");
 }
 
+// ---------------------------------------------------------------- monthly Street View limit
+// Every round a player starts counts as one Street View load. The count lives in a shared
+// Firestore document per month, so it covers every player on every device. Google bills
+// one load each time a Street View viewer is created; this game creates at most one per
+// round, so counting rounds can only over-count, never under-count.
+
+const FIREBASE_VERSION = "10.14.1";
+const usage = {
+  db: null, fs: null,
+  limit: Number.isInteger(config.streetViewMonthlyLimit) ? config.streetViewMonthlyLimit : 4500,
+  async init() {
+    const [{ initializeApp }, fs] = await Promise.all([
+      import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-app.js`),
+      import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`),
+    ]);
+    this.fs = fs;
+    this.db = fs.getFirestore(initializeApp(config.firebase));
+  },
+  // Google's billing month runs on Pacific time.
+  monthKey(date = new Date()) {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit" }).formatToParts(date);
+    return `${parts.find((p) => p.type === "year").value}-${parts.find((p) => p.type === "month").value}`;
+  },
+  ref() { return this.fs.doc(this.db, "streetViewUsage", this.monthKey()); },
+  async used() {
+    const snap = await this.fs.getDoc(this.ref());
+    return snap.exists() ? snap.data().count : 0;
+  },
+  // Adds one load if there is room. Resolves false when the month's limit is used up.
+  async take() {
+    const ref = this.ref();
+    return this.fs.runTransaction(this.db, async (tx) => {
+      const snap = await tx.get(ref);
+      const count = snap.exists() ? snap.data().count : 0;
+      if (count >= this.limit) return false;
+      tx.set(ref, { count: count + 1 });
+      return true;
+    });
+  },
+};
+
+function nextMonthStart() {
+  const [y, m] = usage.monthKey().split("-").map(Number);
+  return new Date(Date.UTC(m === 12 ? y + 1 : y, m % 12, 1, 12)).toLocaleDateString("en-US", { month: "long", day: "numeric" });
+}
+
+async function refreshUsageNote() {
+  const note = $("#usageNote");
+  try {
+    const left = Math.max(0, usage.limit - await usage.used());
+    note.textContent = left > 0
+      ? `${fmt(left)} of ${fmt(usage.limit)} Street View rounds left this month`
+      : `This month's Street View rounds are used up. More on ${nextMonthStart()}.`;
+  } catch { note.textContent = ""; }
+}
+
+function showLimitReached() {
+  stopTimer();
+  $("#setupTitle").textContent = "That's all for this month";
+  $("#setupText").textContent = `This month's ${fmt(usage.limit)} Street View rounds are used up. The limit keeps the game inside Google's free allowance, so nobody gets charged. Play resumes on ${nextMonthStart()}.`;
+  $("#setupDone").hidden = false;
+  setScreen("setup");
+}
+
 // ---------------------------------------------------------------- Google Maps
 
 function loadGoogleMaps() {
   if (!config.googleMapsApiKey) { showSetup(); return; }
+  if (!config.firebase?.projectId) {
+    showSetup("This game needs its monthly Street View limit set up before it can play. Add your Firebase settings to config.js. The README explains how.");
+    return;
+  }
   window.gm_authFailure = () => showSetup(
     "Google didn't accept the API key in config.js. Check that the key is right, that the Maps JavaScript API is turned on for it, and that it allows this website.");
-  window.__gameMapsReady = onMapsReady;
+  const mapsReady = new Promise((resolve) => { window.__gameMapsReady = resolve; });
+  Promise.all([mapsReady, usage.init()]).then(onMapsReady, () =>
+    showSetup("Couldn't connect to the Street View limit counter. Check the Firebase settings in config.js and your internet connection, then reload."));
   const s = document.createElement("script");
   s.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(config.googleMapsApiKey) +
     "&v=weekly&loading=async&callback=__gameMapsReady";
@@ -105,6 +176,13 @@ function loadGoogleMaps() {
 function onMapsReady() {
   gm = google.maps;
   streetView = new gm.StreetViewService();
+  setScreen("home");
+}
+
+// Google bills each Street View viewer and each map when it's created, so they're
+// created once, on the first round, and reused after that.
+function ensureViews() {
+  if (pano) return;
   pano = new gm.StreetViewPanorama($("#pano"), {
     visible: true,
     disableDefaultUI: true,
@@ -127,7 +205,6 @@ function onMapsReady() {
     center: { lat: 20, lng: 0 }, zoom: 2, minZoom: 1,
     disableDefaultUI: true, clickableIcons: false, gestureHandling: "greedy", styles: MAP_STYLES,
   });
-  setScreen("home");
 }
 
 const PIN_URL = (fill, dot) => "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
@@ -218,6 +295,12 @@ async function startRound() {
     catch { if (game === g) { toast("Couldn't reach Street View. Check your connection and try again."); goHome(); } return; }
     if (game !== g) return;
   }
+  let allowed;
+  try { allowed = await usage.take(); }
+  catch { if (game === g) { toast("Couldn't check this month's Street View limit. Check your connection and try again."); goHome(); } return; }
+  if (game !== g) return;
+  if (!allowed) { showLimitReached(); return; }
+  ensureViews();
   const place = g.rounds[i];
   g.pin = null;
   setScreen("play");
@@ -726,6 +809,7 @@ function initUI() {
   $("#mapClose").onclick = () => document.body.classList.remove("map-open");
   $("#nextBtn").onclick = nextRound;
   $("#doneBtn").onclick = goHome;
+  $("#setupDone").onclick = goHome;
   $("#againBtn").onclick = () => {
     if (!game?.multi) { startSolo(); return; }
     if (net?.role === "host") { setScreen("lobby"); hostStartGame(); return; }
